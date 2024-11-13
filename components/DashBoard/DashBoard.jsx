@@ -1,23 +1,29 @@
-// src/pages/Dashboard.js
-import React from 'react';
-import MyChart from '../MyChart/MyChart';
-import BarChart from '../MyChart/BarChart';
+import React, { useContext } from 'react';
+import { WebSocketContext } from '../services/WebSocketProvider.jsx'; // แก้ไขพาธ
+import ChartComponent from '../MyChart/ChartComponent.jsx';
 
 const Dashboard = () => {
-  return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-8 text-center">Dashboard</h1>
-      <div className="space-y-8">
-        {/* แสดง MyChart ในแถวแรก */}
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <MyChart />
-        </div>
+  const { data, isConnected } = useContext(WebSocketContext); // ดึงข้อมูลและสถานะการเชื่อมต่อจาก WebSocket
 
-        {/* แสดง BarChart ในแถวที่สอง */}
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <BarChart />
-        </div>
+  return (
+    <div className="flex-1 bg-gray-50 text-black p-4 grid grid-cols-3 gap-4 h-screen">
+      <div className="bg-white rounded-lg p-4 shadow-md"> {/* ช่องซ้ายบน */}
+        <h2 className="font-bold text-lg mb-2">Machine Status</h2>
+        <p>{isConnected ? "Connected" : "Disconnected"}</p>
+        <p>Latest Power Consumption: {data ? data["Energy Consumption"].Power.toFixed(2) + ' W' : 'N/A'}</p>
+        <p>Latest L1-GND Voltage: {data ? data.Voltage["L1-GND"].toFixed(2) + ' V' : 'N/A'}</p>
+        <p>Latest L2-GND Voltage: {data ? data.Voltage["L2-GND"].toFixed(2) + ' V' : 'N/A'}</p>
+        <p>Latest L3-GND Voltage: {data ? data.Voltage["L3-GND"].toFixed(2) + ' V' : 'N/A'}</p>
+        <p>Latest Pressure: {data ? data.Pressure.toFixed(2) + ' Pa' : 'N/A'}</p>
+        <p>Latest Force: {data ? data.Force.toFixed(2) + ' N' : 'N/A'}</p>
+        <p>Cycle Count: {data ? data["Cycle Count"] : 'N/A'}</p>
+        <p>Position of the Punch: {data ? data["Position of the Punch"].toFixed(2) + ' mm' : 'N/A'}</p>
       </div>
+      <div className="bg-white text-black rounded-lg p-4 shadow-md col-span-2"> {/* ช่องขวาบน */}
+        <h2 className="font-bold text-lg mb-2">Machine Chart</h2>
+        <ChartComponent /> {/* ใช้ ChartComponent แสดงข้อมูลในรูปแบบกราฟ */}
+      </div>
+      
     </div>
   );
 };

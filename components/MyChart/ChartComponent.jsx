@@ -9,8 +9,7 @@ import axios from "axios";
 
 Chart.register(CategoryScale, TimeScale, zoomPlugin);
 
-const MAX_DATA_POINTS = 200;
-const MAX_TOTAL_POINTS = 200;
+const MAX_DATA_POINTS = 200; // จำนวนข้อมูลสูงสุดที่จะแสดงในกราฟ
 
 const ChartComponent = ({ isDataRunning, toggleData }) => {
   const { data, isConnected, sendDateRange } = useContext(WebSocketContext);
@@ -99,7 +98,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
       fetchHistoricalData();
       sendDateRange(startDate, endDate); // ส่งข้อมูลวันเริ่มต้นและวันสิ้นสุดไปยังเซิร์ฟเวอร์
     }
-  }, [startDate, endDate, sendDateRange]); // เพิ่ม sendDateRange ใน dependency array
+  }, [startDate, endDate, sendDateRange]);
 
   // รีเซ็ตกราฟเมื่อข้อมูลถึงจำนวนสูงสุดที่กำหนด
   useEffect(() => {
@@ -120,7 +119,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
               case 2:
                 newDataPoint = data.Force;
                 break;
-              case  3:
+              case 3:
                 newDataPoint = data["Position of the Punch"];
                 break;
               default:
@@ -137,20 +136,6 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
 
         newChartData.labels = [...newChartData.labels].slice(-MAX_DATA_POINTS);
 
-        const totalDataPoints = newChartData.datasets.reduce(
-          (acc, dataset) => acc + dataset.data.length,
-          0
-        );
-
-        if (totalDataPoints >= MAX_TOTAL_POINTS) {
-          return {
-            labels: [],
-            datasets: prevData.datasets.map((dataset) => ({
-              ...dataset,
-              data: [],
-            })),
-          };
-        }
         return newChartData;
       });
     }
@@ -162,7 +147,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
       x: {
         type: "time",
         time: {
-          unit: "second", // สามารถปรับเป็น "minute", "hour", "day" ตามต้องการ
+          unit: "minute", // สามารถปรับเป็น "minute", "hour", "day" ตามต้องการ
           tooltipFormat: "dd/MM/yyyy HH:mm:ss",
         },
         title: {
@@ -236,13 +221,11 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
       <Line data={chartData} options={options} />
 
       <button 
-          onClick={toggleData} 
+          onClick={handleToggleData} 
           className="mt-4 p-2 bg-blue-500 text-white rounded"
         >
           {isDataRunning ? 'Stop Plotting' : 'Start Plotting'}
         </button>
-        
-
     </div>
   );
 };

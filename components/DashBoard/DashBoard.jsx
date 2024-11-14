@@ -16,7 +16,7 @@ const Dashboard = () => {
   // โหลดไฟล์เสียงและแปลงเป็นข้อมูลคลื่นเสียง
   useEffect(() => {
     const loadAudioData = async () => {
-      const response = await fetch('../../assets/sound/Exsamples/Example1.wav'); // เปลี่ยนเป็น path ของไฟล์เสียง
+      const response = await fetch('../../assets/sound/Exsamples/Cycle1.wav'); // เปลี่ยนเป็น path ของไฟล์เสียง
       const arrayBuffer = await response.arrayBuffer();
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);

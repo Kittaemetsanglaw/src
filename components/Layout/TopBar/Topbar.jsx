@@ -8,7 +8,7 @@ const Topbar = () => {
         <button className="text-black hover:text-white">
           <i className="fas fa-bell"></i>
         </button>
-        <img src="/path/to/profile-icon.png" alt="Profile Icon" className="h-8 w-8 rounded-full" /> {/* ใส่ path รูปโปรไฟล์ */}
+        <span className="icon">👤</span>
       </div>
     </div>
   );

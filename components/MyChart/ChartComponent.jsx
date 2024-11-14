@@ -1,51 +1,113 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Line } from 'react-chartjs-2';
-import { CategoryScale } from 'chart.js';
-import Chart from 'chart.js/auto';
-import { WebSocketContext } from '../services/WebSocketProvider.jsx';
-import zoomPlugin from 'chartjs-plugin-zoom';
+import React, { useContext, useEffect, useState } from "react";
+import { Line } from "react-chartjs-2";
+import { CategoryScale, TimeScale } from "chart.js";
+import Chart from "chart.js/auto";
+import "chartjs-adapter-date-fns";
+import { WebSocketContext } from "../services/WebSocketProvider.jsx";
+import zoomPlugin from "chartjs-plugin-zoom";
+import axios from "axios";
 
-Chart.register(CategoryScale);
+Chart.register(CategoryScale, TimeScale, zoomPlugin);
 
-const MAX_DATA_POINTS = 50; // จำนวนข้อมูลสูงสุดที่ต้องการเก็บ
+const MAX_DATA_POINTS = 200;
+const MAX_TOTAL_POINTS = 200;
 
-const ChartComponent = ({ isDataRunning }) => {
-  const { data, isConnected } = useContext(WebSocketContext);
+const ChartComponent = ({ isDataRunning, toggleData }) => {
+  const { data, isConnected, sendDateRange } = useContext(WebSocketContext);
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
       {
-        label: 'Power Consumption',
+        label: "Power Consumption",
         data: [],
-        borderColor: 'rgb(75, 192, 192)',
+        borderColor: "rgb(75, 192, 192)",
         tension: 0,
       },
       {
-        label: 'Pressure',
+        label: "Pressure",
         data: [],
-        borderColor: 'rgb(153, 102, 255)',
+        borderColor: "rgb(153, 102, 255)",
         tension: 0,
       },
       {
-        label: 'Force',
+        label: "Force",
         data: [],
-        borderColor: 'rgb(255, 159, 64)',
+        borderColor: "rgb(255, 159, 64)",
         tension: 0,
       },
       {
-        label: 'Position of the Punch',
+        label: "Position of the Punch",
         data: [],
-        borderColor: 'rgb(0, 0, 255)',
+        borderColor: "rgb(0, 0, 255)",
         tension: 0,
       },
     ],
   });
 
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // ดึงข้อมูลย้อนหลังตามช่วงวันที่เลือก
+  const fetchHistoricalData = async () => {
+    if (startDate && endDate) {
+      try {
+        const response = await axios.get(`/api/data`, {
+          params: {
+            start: startDate,
+            end: endDate,
+          },
+        });
+        const historicalData = response.data;
+
+        // จัดรูปแบบข้อมูลที่ได้จาก API ให้ตรงกับรูปแบบที่กราฟต้องการ
+        const newChartData = {
+          labels: historicalData.map((point) => new Date(point.timestamp || new Date())),
+          datasets: [
+            {
+              label: "Power Consumption",
+              data: historicalData.map((point) => point["Energy Consumption"].Power),
+              borderColor: "rgb(75, 192, 192)",
+            },
+            {
+              label: "Pressure",
+              data: historicalData.map((point) => point.Pressure),
+              borderColor: "rgb(153, 102, 255)",
+            },
+            {
+              label: "Force",
+              data: historicalData.map((point) => point.Force),
+              borderColor: "rgb(255, 159, 64)",
+            },
+            {
+              label: "Position of the Punch",
+              data: historicalData.map((point) => point["Position of the Punch"]),
+              borderColor: "rgb(0, 0, 255)",
+            },
+          ],
+        };
+
+        setChartData(newChartData);
+      } catch (error) {
+        console.error("Error fetching historical data:", error);
+      }
+    }
+  };
+
+  // เรียก fetchHistoricalData เมื่อ startDate หรือ endDate เปลี่ยนแปลง
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchHistoricalData();
+      sendDateRange(startDate, endDate); // ส่งข้อมูลวันเริ่มต้นและวันสิ้นสุดไปยังเซิร์ฟเวอร์
+    }
+  }, [startDate, endDate, sendDateRange]); // เพิ่ม sendDateRange ใน dependency array
+
+  // รีเซ็ตกราฟเมื่อข้อมูลถึงจำนวนสูงสุดที่กำหนด
   useEffect(() => {
     if (data && isDataRunning) {
       setChartData((prevData) => {
+        const newTimestamp = new Date(); // ใช้ Date object สำหรับ timestamp
         const newChartData = {
-          labels: [...prevData.labels, new Date().toLocaleTimeString()],
+          labels: [...prevData.labels, newTimestamp], // เพิ่ม timestamp ใหม่เข้าไปใน labels
           datasets: prevData.datasets.map((dataset, index) => {
             let newDataPoint;
             switch (index) {
@@ -58,14 +120,13 @@ const ChartComponent = ({ isDataRunning }) => {
               case 2:
                 newDataPoint = data.Force;
                 break;
-              case 3:
+              case  3:
                 newDataPoint = data["Position of the Punch"];
                 break;
               default:
                 newDataPoint = null;
             }
 
-            // เพิ่มข้อมูลใหม่และลบข้อมูลเก่าถ้าจำนวนข้อมูลเกิน MAX_DATA_POINTS
             const updatedData = [...dataset.data, newDataPoint].slice(-MAX_DATA_POINTS);
             return {
               ...dataset,
@@ -74,17 +135,94 @@ const ChartComponent = ({ isDataRunning }) => {
           }),
         };
 
-        // ลบ label เก่าถ้าจำนวน label เกิน MAX_DATA_POINTS
-        const updatedLabels = [...newChartData.labels].slice(-MAX_DATA_POINTS);
-        newChartData.labels = updatedLabels;
+        newChartData.labels = [...newChartData.labels].slice(-MAX_DATA_POINTS);
 
+        const totalDataPoints = newChartData.datasets.reduce(
+          (acc, dataset) => acc + dataset.data.length,
+          0
+        );
+
+        if (totalDataPoints >= MAX_TOTAL_POINTS) {
+          return {
+            labels: [],
+            datasets: prevData.datasets.map((dataset) => ({
+              ...dataset,
+              data: [],
+            })),
+          };
+        }
         return newChartData;
       });
     }
   }, [data, isDataRunning]);
 
+  const options = {
+    responsive: true,
+    scales: {
+      x: {
+        type: "time",
+        time: {
+          unit: "second", // สามารถปรับเป็น "minute", "hour", "day" ตามต้องการ
+          tooltipFormat: "dd/MM/yyyy HH:mm:ss",
+        },
+        title: {
+          display: true,
+          text: "Timestamp",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "Values",
+        },
+      },
+    },
+    plugins: {
+      zoom: {
+        zoom: {
+          wheel: {
+            enabled: true,
+          },
+          pinch: {
+            enabled: true,
+          },
+          mode: "x",
+        },
+        pan: {
+          enabled: true,
+          mode: "x",
+        },
+      },
+    },
+  };
+
+  const handleToggleData = () => {
+    toggleData(!isDataRunning); // สลับสถานะการแสดงผลข้อมูล
+  };
+
   return (
     <div className="w-full p-4">
+      <div className="date-picker">
+        <label>
+          Start Date:
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{ backgroundColor: "lightblue", color: "darkblue" }}
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            style={{ backgroundColor: "lightcoral", color: "darkred" }}
+          />
+        </label>
+        <button onClick={fetchHistoricalData} className="mt-4 p-0.5 bg-blue-500 text-white rounded">
+          Fetch Data
+        </button>
+      </div>
+    
       {!isConnected && (
         <div className="text-red-500 font-bold mb-4">
           Disconnected. Attempting to reconnect...
@@ -95,7 +233,16 @@ const ChartComponent = ({ isDataRunning }) => {
           Connected to WebSocket!
         </div>
       )}
-      <Line data={chartData} options={{ responsive: true }} />
+      <Line data={chartData} options={options} />
+
+      <button 
+          onClick={toggleData} 
+          className="mt-4 p-2 bg-blue-500 text-white rounded"
+        >
+          {isDataRunning ? 'Stop Plotting' : 'Start Plotting'}
+        </button>
+        
+
     </div>
   );
 };

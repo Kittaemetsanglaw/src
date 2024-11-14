@@ -3,7 +3,7 @@ import React from 'react';
 
 const Sidebar = () => {
   return (
-    <aside className="w-64 h-screen bg-gray-100 p-4">
+    <aside className="w-55 h-screen bg-gray-100 p-4">
       <div className="text-2xl font-bold mb-6">🦆 Ped-Bro</div>
       <ul className="space-y-4">
         <li className="flex items-center space-x-2"><span className="icon">📊</span> <span>Dashboard</span></li>

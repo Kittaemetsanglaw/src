@@ -3,12 +3,13 @@ import { Line } from 'react-chartjs-2';
 import { CategoryScale } from 'chart.js';
 import Chart from 'chart.js/auto';
 import { WebSocketContext } from '../services/WebSocketProvider.jsx';
+import zoomPlugin from 'chartjs-plugin-zoom';
 
 Chart.register(CategoryScale);
 
 const MAX_DATA_POINTS = 50; // จำนวนข้อมูลสูงสุดที่ต้องการเก็บ
 
-const ChartComponent = () => {
+const ChartComponent = ({ isDataRunning }) => {
   const { data, isConnected } = useContext(WebSocketContext);
   const [chartData, setChartData] = useState({
     labels: [],
@@ -17,24 +18,6 @@ const ChartComponent = () => {
         label: 'Power Consumption',
         data: [],
         borderColor: 'rgb(75, 192, 192)',
-        tension: 0,
-      },
-      {
-        label: 'L1-GND Voltage',
-        data: [],
-        borderColor: 'rgb(255, 99, 132)',
-        tension: 0,
-      },
-      {
-        label: 'L2-GND Voltage',
-        data: [],
-        borderColor: 'rgb(54, 162, 235)',
-        tension: 0,
-      },
-      {
-        label: 'L3-GND Voltage',
-        data: [],
-        borderColor: 'rgb(255, 206, 86)',
         tension: 0,
       },
       {
@@ -50,12 +33,6 @@ const ChartComponent = () => {
         tension: 0,
       },
       {
-        label: 'Cycle Count',
-        data: [],
-        borderColor: 'rgb(0, 255, 0)',
-        tension: 0,
-      },
-      {
         label: 'Position of the Punch',
         data: [],
         borderColor: 'rgb(0, 0, 255)',
@@ -65,7 +42,7 @@ const ChartComponent = () => {
   });
 
   useEffect(() => {
-    if (data) {
+    if (data && isDataRunning) {
       setChartData((prevData) => {
         const newChartData = {
           labels: [...prevData.labels, new Date().toLocaleTimeString()],
@@ -76,24 +53,12 @@ const ChartComponent = () => {
                 newDataPoint = data["Energy Consumption"].Power;
                 break;
               case 1:
-                newDataPoint = data.Voltage["L1-GND"];
-                break;
-              case 2:
-                newDataPoint = data.Voltage["L2-GND"];
-                break;
-              case 3:
-                newDataPoint = data.Voltage["L3-GND"];
-                break;
-              case 4:
                 newDataPoint = data.Pressure;
                 break;
-              case 5:
+              case 2:
                 newDataPoint = data.Force;
                 break;
-              case 6:
-                newDataPoint = data["Cycle Count"];
-                break;
-              case 7:
+              case 3:
                 newDataPoint = data["Position of the Punch"];
                 break;
               default:
@@ -116,7 +81,7 @@ const ChartComponent = () => {
         return newChartData;
       });
     }
-  }, [data]);
+  }, [data, isDataRunning]);
 
   return (
     <div className="w-full p-4">

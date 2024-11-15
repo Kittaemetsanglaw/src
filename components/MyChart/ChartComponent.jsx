@@ -45,6 +45,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [resetTrigger, setResetTrigger] = useState(false); //ประกาศ state สำหรับ reset
 
   // ดึงข้อมูลย้อนหลังตามช่วงวันที่เลือก
   const fetchHistoricalData = async () => {
@@ -131,6 +132,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
               ...dataset,
               data: updatedData,
             };
+
           }),
         };
 
@@ -139,7 +141,43 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
         return newChartData;
       });
     }
-  }, [data, isDataRunning]);
+    // ตรวจสอบเงื่อนไข resetTrigger *นอก* if block ของการอัพเดตข้อมูล
+    if (resetTrigger) {
+      setChartData({
+        labels: [],
+        datasets: [
+          {
+            label: "Power Consumption",
+            data: [],
+            borderColor: "rgb(75, 192, 192)",
+            tension: 0,
+          },
+          {
+            label: "Pressure",
+            data: [],
+            borderColor: "rgb(153, 102, 255)",
+            tension: 0,
+          },
+          {
+            label: "Force",
+            data: [],
+            borderColor: "rgb(255, 159, 64)",
+            tension: 0,
+          },
+          {
+            label: "Position of the Punch",
+            data: [],
+            borderColor: "rgb(0, 0, 255)",
+            tension: 0,
+          },
+        ]
+      });
+      setResetTrigger(false);
+    }
+  }, [data, isDataRunning, resetTrigger]);
+
+
+
 
   const options = {
     responsive: true,
@@ -147,7 +185,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
       x: {
         type: "time",
         time: {
-          unit: "minute", // สามารถปรับเป็น "minute", "hour", "day" ตามต้องการ
+          unit: "second", // สามารถปรับเป็น "minute", "hour", "day" ตามต้องการ
           tooltipFormat: "dd/MM/yyyy HH:mm:ss",
         },
         title: {
@@ -207,7 +245,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
           Fetch Data
         </button>
       </div>
-    
+
       {!isConnected && (
         <div className="text-red-500 font-bold mb-4">
           Disconnected. Attempting to reconnect...
@@ -220,12 +258,15 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
       )}
       <Line data={chartData} options={options} />
 
-      <button 
-          onClick={handleToggleData} 
-          className="mt-4 p-2 bg-blue-500 text-white rounded"
-        >
-          {isDataRunning ? 'Stop Plotting' : 'Start Plotting'}
-        </button>
+      <button
+        onClick={handleToggleData}
+        className="mt-4 p-2 bg-blue-500 text-white rounded"
+      >
+        {isDataRunning ? 'Stop Plotting' : 'Start Plotting'}
+      </button>
+      <button onClick={() => setResetTrigger(true)} className="mt-4 ml-10 pr- p-2 bg-blue-500 text-white rounded">
+        Reset Chart
+      </button>
     </div>
   );
 };

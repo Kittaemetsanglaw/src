@@ -1,13 +1,17 @@
 // Dashboard.jsx
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { WebSocketContext } from '../services/WebSocketProvider.jsx';
 import ChartComponent from '../MyChart/ChartComponent.jsx';
 import WaveformChart from '../../assets/sound/WaveformChart.jsx';
 
+
 const Dashboard = () => {
   const { data, isConnected } = useContext(WebSocketContext);
   const [isDataRunning, setIsDataRunning] = useState(true);
-  const [audioData, setAudioData] = useState([]);
+  const audioRef = useRef(null); // สร้าง ref สำหรับ audio element
+
+  // Resume AudioContext ที่อยู่ใน WaveformChart
+  audioRef.current?.resume();
 
   const toggleData = () => {
     setIsDataRunning((prev) => !prev);
@@ -36,11 +40,11 @@ const Dashboard = () => {
         <p>Latest Pressure: {isDataRunning && data ? data.Pressure.toFixed(2) + ' Pa' : 'N/A'}</p>
         <p>Latest Force: {isDataRunning && data ? data.Force.toFixed(2) + ' N' : 'N/A'}</p>
         <p>Position of the Punch: {isDataRunning && data ? data["Position of the Punch"].toFixed(2) + ' mm' : 'N/A'}</p>
-        
+
         <div className="bg-white rounded-lg p-4 shadow-md col-span-1 mt-5">
-        <WaveformChart audioData={audioData} />
-      </div>
-        
+        <WaveformChart audioFile={'../../assets/sound/Exsamples/Cycle1.wav'}  audioRef={audioRef} /> {/* ส่ง audioRef เป็น props */}
+        </div>
+
 
       </div>
       <div className="bg-white text-black rounded-lg p-4 shadow-md col-span-2">

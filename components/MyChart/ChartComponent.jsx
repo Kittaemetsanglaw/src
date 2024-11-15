@@ -138,6 +138,14 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
 
         newChartData.labels = [...newChartData.labels].slice(-MAX_DATA_POINTS);
 
+        if (newChartData.labels.length >= MAX_DATA_POINTS) {
+          // เคลียร์กราฟ
+          newChartData.labels = [];
+          newChartData.datasets.forEach(dataset => {
+            dataset.data = [];
+          });
+        }
+
         return newChartData;
       });
     }
@@ -260,7 +268,7 @@ const ChartComponent = ({ isDataRunning, toggleData }) => {
 
       <button
         onClick={handleToggleData}
-        className="mt-4 p-2 bg-blue-500 text-white rounded"
+        className="mt-4 p-2 bg-green-500 text-white rounded"
       >
         {isDataRunning ? 'Stop Plotting' : 'Start Plotting'}
       </button>
